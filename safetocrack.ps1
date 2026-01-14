@@ -3,6 +3,7 @@ Write-Host "Enter a site name to check or type 'exit' to quit"
 Write-Host "-------------------------------------------"
 
 $sites = @{}
+$siteWords = @() 
 
 $bestSites = @{
     "CS.RIN.RU" = "https://cs.rin.ru/forum"
@@ -106,13 +107,26 @@ $unsafeSites = @{
     "Zona launcher" = "Unknown sources"
 }
 
+function Extract-Words($title) {
+    $words = @()
+    $titleParts = $title -split '[\.\s]+'
+    foreach ($part in $titleParts) {
+        $cleanPart = $part -replace '[^\w]', ''
+        if ($cleanPart -ne "") {
+            $words += $cleanPart.ToLower()
+        }
+    }
+    return $words
+}
+
 foreach ($site in $bestSites.Keys) {
     $sites[$site.ToLower()] = @{
         Name = $site
         Url = $bestSites[$site]
-        Category = "Best"
+        Category = "⭐ Best"
         Status = "SAFE"
     }
+    $siteWords += Extract-Words $site
 }
 
 foreach ($site in $safeSites.Keys) {
@@ -122,6 +136,7 @@ foreach ($site in $safeSites.Keys) {
         Category = "Safe"
         Status = "SAFE"
     }
+    $siteWords += Extract-Words $site
 }
 
 foreach ($site in $repackSites.Keys) {
@@ -131,6 +146,7 @@ foreach ($site in $repackSites.Keys) {
         Category = "Repacks"
         Status = "SAFE"
     }
+    $siteWords += Extract-Words $site
 }
 
 foreach ($site in $unsafeSites.Keys) {
@@ -141,7 +157,10 @@ foreach ($site in $unsafeSites.Keys) {
         Status = "UNSAFE"
         Warning = $unsafeSites[$site]
     }
+    $siteWords += Extract-Words $site
 }
+
+$siteWords = $siteWords | Sort-Object -Unique
 
 Write-Host "Ready! Loaded $($sites.Count) sites (safe & unsafe).`n" -ForegroundColor Green
 
@@ -159,6 +178,25 @@ while ($true) {
     }
 
     $cleanInput = $userInput.Trim().ToLower()
+    
+    if ($cleanInput.Length -le 3) {
+        $isValidShortSearch = $false
+        
+        foreach ($word in $siteWords) {
+            if ($word -eq $cleanInput) {
+                $isValidShortSearch = $true
+                break
+            }
+        }
+        
+        if (-not $isValidShortSearch) {
+            Write-Host "`nSearch term '$userInput' is too short (1-3 letters)." -ForegroundColor Red
+            Write-Host "You can only search with 1-3 letters if it matches a complete word from a site title." -ForegroundColor Yellow
+            Write-Host "Try a longer search term (4+ letters).`n" -ForegroundColor Gray
+            continue
+        }
+    }
+
     $foundSites = @()
 
     foreach ($siteKey in $sites.Keys) {
