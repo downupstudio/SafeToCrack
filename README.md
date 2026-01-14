@@ -3,7 +3,7 @@
 ## How to run
 Run this command in your terminal.
 ```powershell
-Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/downupstudio/SafeToCrack/refs/heads/main/safetocrack.ps1".Content
+Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/downupstudio/SafeToCrack/refs/heads/main/safetocrack.ps1").Content
 ```
 
 ## What the script does
