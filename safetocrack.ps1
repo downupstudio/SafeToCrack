@@ -1,9 +1,8 @@
 Write-Host "SafeToCrack - Site Safety & Danger Checker"
-Write-Host "Enter a site name to check or type 'exit' to quit"
-Write-Host "-------------------------------------------"
+Write-Host "============================================"
 
 $sites = @{}
-$siteWords = @() 
+$siteWords = @()
 
 $bestSites = @{
     "CS.RIN.RU" = "https://cs.rin.ru/forum"
@@ -123,7 +122,7 @@ foreach ($site in $bestSites.Keys) {
     $sites[$site.ToLower()] = @{
         Name = $site
         Url = $bestSites[$site]
-        Category = "⭐ Best"
+        Category = "BEST"
         Status = "SAFE"
     }
     $siteWords += Extract-Words $site
@@ -162,70 +161,137 @@ foreach ($site in $unsafeSites.Keys) {
 
 $siteWords = $siteWords | Sort-Object -Unique
 
-Write-Host "Ready! Loaded $($sites.Count) sites (safe & unsafe).`n" -ForegroundColor Green
-
-while ($true) {
-    $userInput = Read-Host "Enter site name"
-
-    if ($userInput -eq "exit") {
-        Write-Host "Exiting SafeToCrack. Goodbye!" -ForegroundColor Yellow
-        break
-    }
-
-    if ([string]::IsNullOrWhiteSpace($userInput)) {
-        Write-Host "Please enter a site name.`n" -ForegroundColor Yellow
-        continue
-    }
-
-    $cleanInput = $userInput.Trim().ToLower()
+function Show-AllSafeSites {
+    Write-Host ""
+    Write-Host "ALL SAFE SITES" -ForegroundColor Cyan
+    Write-Host "=============="
     
-    if ($cleanInput.Length -le 3) {
-        $isValidShortSearch = $false
+    $safeCount = 0
+    $currentCategory = ""
+    
+    $allSafeSites = $sites.GetEnumerator() | Where-Object { $_.Value.Status -eq "SAFE" } | Sort-Object { $_.Value.Category }, { $_.Value.Name }
+    
+    foreach ($siteEntry in $allSafeSites) {
+        $site = $siteEntry.Value
         
-        foreach ($word in $siteWords) {
-            if ($word -eq $cleanInput) {
-                $isValidShortSearch = $true
-                break
+        if ($site.Category -ne $currentCategory) {
+            Write-Host ""
+            Write-Host "$($site.Category)" -ForegroundColor Yellow
+            Write-Host "----------"
+            $currentCategory = $site.Category
+        }
+        
+        Write-Host "  - $($site.Name)" -ForegroundColor Green
+        if ($site.Url) {
+            Write-Host "    $($site.Url)" -ForegroundColor White
+        }
+        $safeCount++
+    }
+    
+    Write-Host ""
+    Write-Host "Total safe sites: $safeCount" -ForegroundColor Cyan
+}
+
+Write-Host "Ready! Loaded $($sites.Count) sites (safe & unsafe)." -ForegroundColor Green
+Write-Host ""
+
+$running = $true
+
+while ($running) {
+    Write-Host "MAIN MENU" -ForegroundColor Cyan
+    Write-Host "========="
+    Write-Host "1. Search for a site"
+    Write-Host "2. Show all safe sites"
+    Write-Host "3. Exit"
+    Write-Host ""
+    
+    $choice = Read-Host "Enter your choice (1-3)"
+    
+    switch ($choice) {
+        "1" {
+            Write-Host ""
+            Write-Host "SITE SEARCH" -ForegroundColor Yellow
+            Write-Host "-----------"
+            $userInput = Read-Host "Enter site name to search (or 'back' to return to menu)"
+
+            if ($userInput -eq "back") {
+                continue
             }
-        }
-        
-        if (-not $isValidShortSearch) {
-            Write-Host "`nSearch term '$userInput' is too short (1-3 letters)." -ForegroundColor Red
-            Write-Host "You can only search with 1-3 letters if it matches a complete word from a site title." -ForegroundColor Yellow
-            Write-Host "Try a longer search term (4+ letters).`n" -ForegroundColor Gray
-            continue
-        }
-    }
 
-    $foundSites = @()
+            if ([string]::IsNullOrWhiteSpace($userInput)) {
+                Write-Host "Please enter a site name." -ForegroundColor Yellow
+                Write-Host ""
+                continue
+            }
 
-    foreach ($siteKey in $sites.Keys) {
-        if ($siteKey.Contains($cleanInput)) {
-            $foundSites += $sites[$siteKey]
-        }
-    }
-
-    if ($foundSites.Count -gt 0) {
-        Write-Host "`nFound $($foundSites.Count) match(es):" -ForegroundColor Green
-
-        foreach ($site in $foundSites) {
-            if ($site.Status -eq "SAFE") {
-                Write-Host " - $($site.Name)" -ForegroundColor Green
-                Write-Host "   Status: $($site.Status)" -ForegroundColor Green
-                Write-Host "   Category: $($site.Category)" -ForegroundColor White
-                if ($site.Url) {
-                    Write-Host "   URL: $($site.Url)" -ForegroundColor White
+            $cleanInput = $userInput.Trim().ToLower()
+            
+            if ($cleanInput.Length -le 3) {
+                $isValidShortSearch = $false
+                
+                foreach ($word in $siteWords) {
+                    if ($word -eq $cleanInput) {
+                        $isValidShortSearch = $true
+                        break
+                    }
                 }
+                
+                if (-not $isValidShortSearch) {
+                    Write-Host ""
+                    Write-Host "Search term '$userInput' is too short (1-3 letters)." -ForegroundColor Red
+                    Write-Host "You can only search with 1-3 letters if it matches a complete word from a site title." -ForegroundColor Yellow
+                    Write-Host "Try a longer search term (4+ letters)." -ForegroundColor Gray
+                    Write-Host ""
+                    continue
+                }
+            }
+
+            $foundSites = @()
+
+            foreach ($siteKey in $sites.Keys) {
+                if ($siteKey.Contains($cleanInput)) {
+                    $foundSites += $sites[$siteKey]
+                }
+            }
+
+            if ($foundSites.Count -gt 0) {
+                Write-Host ""
+                Write-Host "Found $($foundSites.Count) match(es):" -ForegroundColor Green
+
+                foreach ($site in $foundSites) {
+                    if ($site.Status -eq "SAFE") {
+                        Write-Host " - $($site.Name)" -ForegroundColor Green
+                        Write-Host "   Status: $($site.Status)" -ForegroundColor Green
+                        Write-Host "   Category: $($site.Category)" -ForegroundColor White
+                        if ($site.Url) {
+                            Write-Host "   URL: $($site.Url)" -ForegroundColor White
+                        }
+                    } else {
+                        Write-Host " - $($site.Name)" -ForegroundColor Red
+                        Write-Host "   Status: $($site.Status)" -ForegroundColor Red
+                        Write-Host "   Warning: $($site.Warning)" -ForegroundColor Yellow
+                    }
+                }
+                Write-Host ""
             } else {
-                Write-Host " - $($site.Name)" -ForegroundColor Red
-                Write-Host "   Status: $($site.Status)" -ForegroundColor Red
-                Write-Host "   Warning: $($site.Warning)" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "Site not found in database: $userInput" -ForegroundColor Gray
+                Write-Host "This site is not in our safety lists." -ForegroundColor Gray
+                Write-Host ""
             }
         }
-
-        Write-Host ""
-    } else {
-        Write-Host "`nSite not found in database: $userInput" -ForegroundColor Gray
-        Write-Host "This site is not in our safety lists.`n" -ForegroundColor Gray
+        "2" {
+            Show-AllSafeSites
+        }
+        "3" {
+            Write-Host ""
+            Write-Host "Exiting SafeToCrack. Goodbye!" -ForegroundColor Yellow
+            $running = $false
+        }
+        default {
+            Write-Host ""
+            Write-Host "Invalid choice. Please enter 1, 2, or 3." -ForegroundColor Red
+            Write-Host ""
+        }
     }
 }
